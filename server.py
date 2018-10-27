@@ -13,11 +13,11 @@ except IndexError:
     sys.exit("Usage: python3 server.py <port>")
 
 
-class EchoHandler(socketserver.DatagramRequestHandler):
+class SIPRegistrerHandler(socketserver.DatagramRequestHandler):
     """
     Echo server class
     """
-
+    dic = {}
     def handle(self):
         """
         handle method of the server class
@@ -26,15 +26,20 @@ class EchoHandler(socketserver.DatagramRequestHandler):
         IP = self.client_address[0]
         PORT = self.client_address[1]
         print("client_ip: ", IP + "\t", "client_port: ", PORT)
-        self.wfile.write(b"Hemos recibido tu peticion")
-        
+        self.wfile.write(b"SIP/2.0 200 OK\r\n\r\n")
+        print(self.client_address)
         for line in self.rfile:
-            print("El cliente nos manda: ", line.decode('utf-8'))
+            if line:
+                if line.decode('utf-8')[:8] == 'REGISTER':
+                    print("El cliente nos manda:", line.decode('utf-8'))
+                    user = line.decode('utf-8')[13:-10]
+                    self.dic[user] = self.client_address[0]
+        print(self.dic)
 
 if __name__ == "__main__":
     # Listens at localhost ('') port 6001 
     # and calls the EchoHandler class to manage the request
-    serv = socketserver.UDPServer(('', int(PORT)), EchoHandler) 
+    serv = socketserver.UDPServer(('', int(PORT)), SIPRegistrerHandler) 
 
     print("Lanzando servidor UDP de eco...")
     try:
