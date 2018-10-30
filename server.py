@@ -20,10 +20,9 @@ class SIPRegistrerHandler(socketserver.DatagramRequestHandler):
     Echo server class
     """
     dic = {}
-    
+
     def register2json(self):
         json.dump(self.dic, open('registered,json', 'w'))
-
 
     def json2registered(self):
         try:
@@ -32,6 +31,7 @@ class SIPRegistrerHandler(socketserver.DatagramRequestHandler):
                 self.expiration()
         except(FileNotFoundError):
             pass
+
     def expiration(self):
         expired = []
         time_exp = strftime('%Y-%m-%d %H:%M:%S', gmtime(time()))
@@ -40,11 +40,11 @@ class SIPRegistrerHandler(socketserver.DatagramRequestHandler):
                 expired.append(user)
         for user in expired:
             del self.dic[user]
-    
+
     def handle(self):
         if self.dic == {}:
             self.json2registered()
-            
+
         self.expiration()
         self.wfile.write(b"SIP/2.0 200 OK\r\n\r\n")
         print(self.client_address)
@@ -63,14 +63,15 @@ class SIPRegistrerHandler(socketserver.DatagramRequestHandler):
                             del self.dic[user]
                         except(KeyError):
                             print("No Exist")
-            print(line.decode('utf-8'),end='')
+            print(line.decode('utf-8'), end='')
         print(self.dic)
         self.register2json()
 
+
 if __name__ == "__main__":
-    # Listens at localhost ('') port 6001 
+    # Listens at localhost ('') port 6001
     # and calls the EchoHandler class to manage the request
-    serv = socketserver.UDPServer(('', int(PORT)), SIPRegistrerHandler) 
+    serv = socketserver.UDPServer(('', int(PORT)), SIPRegistrerHandler)
 
     print("Lanzando servidor UDP de eco...")
     try:
