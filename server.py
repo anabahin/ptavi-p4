@@ -19,9 +19,11 @@ class SIPRegistrerHandler(socketserver.DatagramRequestHandler):
     dic = {}
 
     def register2json(self):
+        """json."""
         json.dump(self.dic, open('registered,json', 'w'))
 
     def json2registered(self):
+        """file json."""
         try:
             with open('registered.json', 'r') as file:
                 self.dic = json.load(file)
@@ -30,6 +32,7 @@ class SIPRegistrerHandler(socketserver.DatagramRequestHandler):
             pass
 
     def expiration(self):
+        """Expires."""
         expired = []
         time_exp = strftime('%Y-%m-%d %H:%M:%S', gmtime(time()))
         for user in self.dic:
@@ -39,6 +42,7 @@ class SIPRegistrerHandler(socketserver.DatagramRequestHandler):
             del self.dic[user]
 
     def handle(self):
+        """handle."""
         if self.dic == {}:
             self.json2registered()
 
