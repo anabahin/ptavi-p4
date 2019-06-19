@@ -1,30 +1,31 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-"""Programa cliente UDP que abre un socket a un servidor."""
 
-import socket
 import sys
+import socket
 
-# Constantes. Dirección IP del servidor y contenido a enviar
-# paso la IP y puerto y el comentario
+ussage_error = 'usage: python3 client.py <ip><port><method><username><expires>'
+
 if len(sys.argv) < 6:
-    sys.exit("Usage: python3 client.py < ip > < port > "
-             " < register > < sip_address > < expires_value >")
+    sys.exit(usage_error)
 
-SERVER = sys.argv[1]
-PORT = sys.argv[2]
-COMMENT = (sys.argv[4])
-EXPIRE = sys.argv[5]
+server_ip = sys.argv[1]
+server_port = sys.argv[2]
+method = sys.argv[3]
+username = sys.argv[4]
+expires = sys.argv[5]
 
-# Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as my_socket:
-    my_socket.connect((SERVER, int(PORT)))
-    print("Enviando:", COMMENT)
-    if sys.argv[3] == 'register':
-        my_socket.send(bytes('REGISTER sip: ' + COMMENT +
-                             '  SIP/2.0\r\nExpires: ' +
-                             EXPIRE + '\r\n\r\n', 'utf-8') + b'\r\n')
-        data = my_socket.recv(1024)
-    print('Recibido -- ', data.decode('utf-8'))
+    my_socket.connect((server_ip, int(server_port)))
+    print('Enviando:', method.upper())
+    if method.upper() == 'REGISTER':
+        mess = method.upper() + ' sip: ' + username + ' SIP/2.0\r\nExpires: '
+        mess += expires + '\r\n'
+        my_socket.send(bytes(mess, 'utf-8') + b'\r\n')
+        data = my_socket.recv(1024).decode('utf-8')
+        if data:
+            print('Recibido -- ', data)
+        else:
+            print('No server listening at', server_ip + ':' + server_port)
 
-print("Socket terminado.")
+print('Socket terminado.')
