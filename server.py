@@ -1,81 +1,76 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-"""Clase (y programa principal) para un servidor de eco en UDP simple."""
 
-import socketserver
 import sys
-from time import gmtime, strftime, time
 import json
+import socketserver
+from time import gmtime, strftime, time
 
-try:
-    PORT = sys.argv[1]
-except IndexError:
-    sys.exit("Usage: python3 server.py <port>")
+usage_error = 'usage: python3 server.py <port>'
 
 
 class SIPRegistrerHandler(socketserver.DatagramRequestHandler):
-    """Echo server class."""
 
-    dic = {}
+    dicc = {}
 
     def register2json(self):
-        """json."""
-        json.dump(self.dic, open('registered,json', 'w'))
+        with open('registered.json', 'w') as jsonfile:
+            json.dump(self.dicc, jsonfile, indent=3)
 
     def json2registered(self):
-        """file json."""
         try:
-            with open('registered.json', 'r') as file:
-                self.dic = json.load(file)
+            with open('registered.json', 'r') as jsonfile:
+                self.dicc = json.load(jsonfile)
                 self.expiration()
         except(FileNotFoundError):
             pass
 
     def expiration(self):
-        """Expires."""
         expired = []
         time_exp = strftime('%Y-%m-%d %H:%M:%S', gmtime(time()))
-        for user in self.dic:
-            if self.dic[user][1] <= time_exp:
+        for user in self.dicc:
+            if self.dicc[user][1] <= time_exp:
                 expired.append(user)
         for user in expired:
-            del self.dic[user]
+            del self.dicc[user]
 
     def handle(self):
-        """handle."""
-        if self.dic == {}:
-            self.json2registered()
-
-        self.expiration()
-        self.wfile.write(b"SIP/2.0 200 OK\r\n\r\n")
-        print(self.client_address)
-        for line in self.rfile:
-            if line:
-                if line.decode('utf-8')[:8] == 'REGISTER':
-                    user = line.decode('utf-8')[13:-10]
-                    ip = self.client_address[0]
-                elif line.decode('utf-8')[:7] == 'Expires':
-                    expires = int(line.decode('utf-8')[9:]) + time()
-                    expire = strftime('%Y-%m-%d %H:%M:%S', gmtime(expires))
-                    if line.decode('utf-8').split(' ')[1][0] != '0':
-                        self.dic[user] = [ip, expire]
-                    else:
-                        try:
-                            del self.dic[user]
-                        except(KeyError):
-                            print("No Exist")
-            print(line.decode('utf-8'), end='')
-        print(self.dic)
+        self.json2registered()
+        data = self.rfile.read().decode('utf-8')
+        if 'REGISTER' in data:
+            print('register received')
+            username = data.split('\r\n')[0].split()[2]
+            exp_time = int(data.split('\r\n')[1].split()[1])
+            expires = exp_time + time()
+            expires_str = strftime('%Y-%m-%d %H:%M:%S', gmtime(expires))
+            if username in self.dicc:
+                if exp_time != 0:
+                    self.dicc[username] = [self.client_address[0], expires_str]
+                    print('user update')
+                    self.wfile.write(b'SIP/2.0 200 OK\r\n')
+                else:
+                    try:
+                        del self.dicc[username]
+                        print('user deleted')
+                        self.wfile.write(b'SIP/2.0 200 OK\r\n')
+                    except:
+                        print('User not found')
+            else:
+                self.dicc[username] = [self.client_address[0], expires_str]
+                print('user saved')
+                self.wfile.write(b'SIP/2.0 200 OK\r\n')
         self.register2json()
 
 
-if __name__ == "__main__":
-    # Listens at localhost ('') port 6001
-    # and calls the EchoHandler class to manage the request
-    serv = socketserver.UDPServer(('', int(PORT)), SIPRegistrerHandler)
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        sys.exit(usage_error)
+    else:
+        port = sys.argv[1]
+    serv = socketserver.UDPServer(('', int(port)), SIPRegistrerHandler)
 
-    print("Lanzando servidor UDP de eco...")
+    print('Lanzando servidor UDP de eco...')
     try:
         serv.serve_forever()
     except KeyboardInterrupt:
-        print("Finalizado servidor")
+        print('Finalizado servidor')
