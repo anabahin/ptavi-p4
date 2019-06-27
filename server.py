@@ -38,7 +38,6 @@ class SIPRegistrerHandler(socketserver.DatagramRequestHandler):
         self.json2registered()
         data = self.rfile.read().decode('utf-8')
         if 'REGISTER' in data:
-            print('register received')
             username = data.split('\r\n')[0].split()[2]
             exp_time = int(data.split('\r\n')[1].split()[1])
             expires = exp_time + time()
@@ -51,13 +50,11 @@ class SIPRegistrerHandler(socketserver.DatagramRequestHandler):
                 else:
                     try:
                         del self.dicc[username]
-                        print('user deleted')
                         self.wfile.write(b'SIP/2.0 200 OK\r\n')
                     except:
-                        print('User not found')
+                        self.wfile.write(b'SIP/2.0 404 User Not Found\r\n')
             else:
                 self.dicc[username] = [self.client_address[0], expires_str]
-                print('user saved')
                 self.wfile.write(b'SIP/2.0 200 OK\r\n')
         self.register2json()
 
